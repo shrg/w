@@ -3,7 +3,7 @@
     { "name": "Da Lat", "country": "VN", "label": "Да Лат", "home": true, "lat": 11.9465, "lon": 108.4419 },
 
     { "name": "Saint Petersburg", "country": "RU", "label": "Санкт-Петербург"               },
-    { "name": "Kalevala",         "country": "RU", "label": "Калевала"                      },
+    { "name": "Kalevala",         "country": "RU", "label": "Kalevala"                      },
     { "name": "Moscow",           "country": "RU", "label": "Москва"                        },
     { "name": "Kropotkin",        "country": "RU", "label": "Кропоткин"                     },
     { "name": "Adler",            "country": "RU", "label": "Адлер"                         },
@@ -38,7 +38,7 @@
     { "label": "Да Лат",          "country": "VN", "timezone": "Asia/Ho_Chi_Minh", "home": true },
     { "label": "Санкт-Петербург", "country": "RU", "timezone": "Europe/Moscow"                  },
     { "label": "Алматы",          "country": "KZ", "timezone": "Asia/Almaty"                    },
-    { "label": "Ереван",          "country": "AM", "timezone": "Asia/Yerevan"                   },
-    { "label": "Дубай",           "country": "AE", "timezone": "Asia/Dubai"                     }
+    { "label": "Дубай",           "country": "AE", "timezone": "Asia/Dubai"                     },
+    { "label": "Ереван",          "country": "AM", "timezone": "Asia/Yerevan"                   }
   ]
 }
