@@ -539,7 +539,7 @@ async function init() {
     for (const { cc, cities } of groups) {
       const hdr = document.createElement('div');
       hdr.className = 'country-header';
-      hdr.textContent = `${getFlag(cc)} ${COUNTRY_NAMES[cc] || cc}`;
+      hdr.innerHTML = `${getFlag(cc)} ${COUNTRY_NAMES[cc] || cc}`;
       grid.appendChild(hdr);
 
       for (const city of cities) {
