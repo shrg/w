@@ -36,7 +36,7 @@ const COUNTRY_NAMES = {
   EE: 'Эстония',    MA: 'Марокко',      RS: 'Сербия',
   TR: 'Турция',     AE: 'ОАЭ',          TH: 'Таиланд',
   KZ: 'Казахстан',  KR: 'Южная Корея',  KG: 'Киргизия',
-  AM: 'Армения',
+  AM: 'Армения',    MY: 'Малайзия',     ID: 'Индонезия',
 };
 
 // ── БАЗОВЫЕ ХЕЛПЕРЫ ───────────────────────────────────────────
@@ -639,8 +639,9 @@ async function init() {
       startClock();
     }
 
-    const homeCity = config.cities.find(c => c.home) || config.cities[0];
-    const groups   = groupByCountry(config.cities);
+    const homeCity      = config.cities.find(c => c.home) || config.cities[0];
+    const nonHomeCities = config.cities.filter(c => c !== homeCity);
+    const groups        = groupByCountry(nonHomeCities);
     const slots    = [];
 
     // Загрузочный плейсхолдер для домашнего города
@@ -654,10 +655,7 @@ async function init() {
 
     // Строим сетку для остальных городов (сгруппированы по стране, без отдельных заголовков)
     for (const { cc, cities } of groups) {
-      const nonHome = cities.filter(c => c !== homeCity);
-      if (!nonHome.length) continue;
-
-      for (const city of nonHome) {
+      for (const city of cities) {
         const idx = config.cities.indexOf(city);
         const ph  = document.createElement('div');
         ph.className = 'city-card loading-card';

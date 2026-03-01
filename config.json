@@ -3,32 +3,35 @@
     { "name": "Da Lat", "country": "VN", "label": "Да Лат", "home": true, "lat": 11.9465, "lon": 108.4419 },
 
     { "name": "Saint Petersburg", "country": "RU", "label": "Санкт-Петербург"               },
-    { "name": "Kropotkin",        "country": "RU", "label": "Кропоткин"                     },
     { "name": "Kalevala",         "country": "RU", "label": "Kalevala"                      },
     { "name": "Moscow",           "country": "RU", "label": "Москва"                        },
+    { "name": "Kropotkin",        "country": "RU", "label": "Кропоткин"                     },
     { "name": "Adler",            "country": "RU", "label": "Адлер"                         },
 
     { "name": "Tbilisi",          "country": "GE", "label": "Тбилиси"                       },
     { "name": "Batumi",           "country": "GE", "label": "Батуми"                        },
 
-    { "name": "Tallinn",          "country": "EE", "label": "Таллин"                        },
-
-    { "name": "Marrakech",        "country": "MA", "label": "Марракеш"                      },
-
-    { "name": "Belgrade",         "country": "RS", "label": "Белград"                       },
-
-    { "name": "Istanbul",         "country": "TR", "label": "Стамбул"                       },
-
-    { "name": "Dubai",            "country": "AE", "label": "Дубай"                         },
-
-    { "name": "Bangkok",          "country": "TH", "label": "Бангкок"                       },
-    { "name": "Chiang Mai",       "country": "TH", "label": "Чиангмай"                      },
+    { "name": "Yerevan",          "country": "AM", "label": "Ереван"                        },
+    { "name": "Tsaghkadzor",      "country": "AM", "label": "Цахкадзор", "lat": 40.5605, "lon": 44.7574 },
 
     { "name": "Almaty",           "country": "KZ", "label": "Алматы"                        },
+    { "name": "Bishkek",          "country": "KG", "label": "Бишкек"                        },
 
-    { "name": "Seoul",            "country": "KR", "label": "Сеул"                          },
+    { "name": "Tallinn",          "country": "EE", "label": "Таллин"                        },
 
-    { "name": "Bishkek",          "country": "KG", "label": "Бишкек"                        }
+    { "name": "Da Nang",          "country": "VN", "label": "Дананг", "lat": 16.0544, "lon": 108.2022 },
+    { "name": "Bangkok",          "country": "TH", "label": "Бангкок"                       },
+    { "name": "Chiang Mai",       "country": "TH", "label": "Чиангмай"                      },
+    { "name": "Kuala Lumpur",     "country": "MY", "label": "Куала-Лумпур"                  },
+    { "name": "Jakarta",          "country": "ID", "label": "Джакарта"                      },
+
+    { "name": "Belgrade",         "country": "RS", "label": "Белград"                       },
+    { "name": "Marrakech",        "country": "MA", "label": "Марракеш"                      },
+    { "name": "Chefchaouen",      "country": "MA", "label": "Шефшуэн"                       },
+    { "name": "Istanbul",         "country": "TR", "label": "Стамбул"                       },
+    { "name": "Alanya",           "country": "TR", "label": "Алания"                        },
+    { "name": "Dubai",            "country": "AE", "label": "Дубай"                         },
+    { "name": "Seoul",            "country": "KR", "label": "Сеул"                          }
   ],
 
   "clock": [
