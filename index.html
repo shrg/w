@@ -11,16 +11,21 @@
 </head>
 <body>
   <div id="app">
-    <header>
-      <div class="header-content">
-        <h1>Погода</h1>
-        <div class="header-right">
-          <span id="last-updated"></span>
-          <button id="refresh-btn" title="Обновить">↻</button>
-        </div>
+
+    <!-- Верхняя панель: слева — погода дома, справа — мировые часы -->
+    <div id="top-panel">
+      <div id="home-weather"></div>
+      <div id="world-clock">
+        <div id="cw-body"><div class="cw-loading">Загрузка…</div></div>
       </div>
-    </header>
+    </div>
+
+    <!-- Расширенный прогноз (9 дней + блок съёмки) для домашнего города -->
+    <div id="home-forecast"></div>
+
+    <!-- Карточки остальных городов -->
     <main id="cities-grid"></main>
+
   </div>
   <script src="app.js"></script>
 </body>

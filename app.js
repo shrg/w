@@ -36,10 +36,10 @@ const COUNTRY_NAMES = {
   EE: 'Эстония',    MA: 'Марокко',      RS: 'Сербия',
   TR: 'Турция',     AE: 'ОАЭ',          TH: 'Таиланд',
   KZ: 'Казахстан',  KR: 'Южная Корея',  KG: 'Киргизия',
+  AM: 'Армения',
 };
 
-// ── HELPERS ───────────────────────────────────────────────────
-
+// ── БАЗОВЫЕ ХЕЛПЕРЫ ───────────────────────────────────────────
 function wmo(code)  { return WMO[code] || { ru: 'Нет данных', icon: '🌡️', type: 'unknown' }; }
 
 function uvInfo(uv) {
@@ -64,13 +64,10 @@ function parseDateLocal(str) {
   const [y, m, d] = str.split('-').map(Number);
   return new Date(y, m - 1, d);
 }
-
-// Use UTC noon to get reliable day-of-week regardless of timezone
 function getDayOfWeek(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay(); // 0=Sun … 6=Sat
+  return new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay();
 }
-
 function dayLabel(dateStr) {
   const d   = parseDateLocal(dateStr);
   const now = new Date();
@@ -78,36 +75,122 @@ function dayLabel(dateStr) {
   const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
   if (d.getTime() === today.getTime())     return 'Сегодня';
   if (d.getTime() === yesterday.getTime()) return 'Вчера';
-  const dow = getDayOfWeek(dateStr);
-  return `${RU_DAYS[dow]} ${d.getDate()} ${RU_MONTHS[d.getMonth()]}`;
+  return `${RU_DAYS[getDayOfWeek(dateStr)]} ${d.getDate()} ${RU_MONTHS[d.getMonth()]}`;
 }
-
 function isToday(dateStr) {
   const d = parseDateLocal(dateStr), n = new Date();
-  return d.getFullYear() === n.getFullYear() &&
-         d.getMonth()    === n.getMonth()    &&
-         d.getDate()     === n.getDate();
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
 }
-
 function isYesterday(dateStr) {
-  const d = parseDateLocal(dateStr), y = new Date();
-  y.setDate(y.getDate() - 1);
-  return d.getFullYear() === y.getFullYear() &&
-         d.getMonth()    === y.getMonth()    &&
-         d.getDate()     === y.getDate();
+  const d = parseDateLocal(dateStr), y = new Date(); y.setDate(y.getDate() - 1);
+  return d.getFullYear() === y.getFullYear() && d.getMonth() === y.getMonth() && d.getDate() === y.getDate();
 }
-
-function localTime(timezone) {
-  try { return new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: timezone }); }
+function localTime(tz) {
+  try { return new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: tz }); }
   catch { return ''; }
 }
+function sunTime(iso) { return iso?.split('T')[1]?.slice(0, 5) ?? '—'; }
 
-// "2024-01-20T07:23"  →  "07:23"
-function sunTime(isoStr) {
-  return isoStr?.split('T')[1]?.slice(0, 5) ?? '—';
+// ── МИРОВЫЕ ЧАСЫ ─────────────────────────────────────────────
+function getUTCOffsetMinutes(tz) {
+  try {
+    const d = new Date();
+    const local = new Date(d.toLocaleString('en-US', { timeZone: tz }));
+    const utc   = new Date(d.toLocaleString('en-US', { timeZone: 'UTC' }));
+    return Math.round((local - utc) / 60000);
+  } catch { return 0; }
 }
 
-// ── PHOTOGRAPHY RATING ────────────────────────────────────────
+function moscowDiff(tz) {
+  const diff = getUTCOffsetMinutes(tz) - 180; // Moscow = UTC+3 = 180 min
+  if (diff === 0) return 'МСК';
+  const sign = diff > 0 ? '+' : '−';
+  const abs  = Math.abs(diff);
+  const h    = Math.floor(abs / 60);
+  const m    = abs % 60;
+  return `МСК${sign}${h}${m ? ':' + String(m).padStart(2, '0') : ''}`;
+}
+
+function timeOfDay(tz) {
+  try {
+    const h = parseInt(new Date().toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }));
+    if (h >= 5  && h < 8)  return '🌅'; // рассвет
+    if (h >= 8  && h < 18) return '☀️'; // день
+    if (h >= 18 && h < 22) return '🌆'; // закат/вечер
+    return '🌙';                         // ночь
+  } catch { return ''; }
+}
+
+// clockDataArr: объект { cityIndex: { label, countryName, timezone, isHome, order } }
+let clockDataArr = {};
+let clockTimer   = null;
+
+function renderWorldClockPanel(cities) {
+  const home   = cities.find(d => d.isHome);
+  const others = cities.filter(d => !d.isHome);
+  const now    = new Date();
+
+  const fmt = (tz, sec) => now.toLocaleTimeString('ru-RU', {
+    timeZone: tz, hour: '2-digit', minute: '2-digit',
+    ...(sec ? { second: '2-digit' } : {}), hour12: false,
+  });
+
+  const homeHTML = home ? `
+    <div class="cw-home">
+      <div class="cw-home-city">${home.label}</div>
+      <div class="cw-home-sub">
+        <span data-tod="${home.timezone}">${timeOfDay(home.timezone)}</span>
+        ${home.countryName} · <span class="cw-msk">${moscowDiff(home.timezone)}</span>
+      </div>
+      <div class="cw-home-time" data-clock="${home.timezone}" data-sec="1">${fmt(home.timezone, true)}</div>
+    </div>
+    <div class="cw-sep"></div>` : '';
+
+  const othersHTML = others.map(d => `
+    <div class="cw-item">
+      <div class="cw-item-left">
+        <div class="cw-item-city">${d.label}</div>
+        <div class="cw-item-sub">
+          <span data-tod="${d.timezone}">${timeOfDay(d.timezone)}</span>
+          ${d.countryName} · <span class="cw-msk">${moscowDiff(d.timezone)}</span>
+        </div>
+      </div>
+      <div class="cw-item-time" data-clock="${d.timezone}" data-sec="0">${fmt(d.timezone, false)}</div>
+    </div>`).join('');
+
+  return `<div class="cw-inner">${homeHTML}<div class="cw-others">${othersHTML}</div></div>`;
+}
+
+function updateClockPanel() {
+  const el = document.getElementById('cw-body');
+  if (!el) return;
+  const sorted = Object.values(clockDataArr).sort((a, b) => a.order - b.order);
+  el.innerHTML = sorted.length
+    ? renderWorldClockPanel(sorted)
+    : '<div class="cw-loading">Загрузка…</div>';
+}
+
+function startClock() {
+  if (clockTimer) clearInterval(clockTimer);
+  function tick() {
+    const now = new Date();
+    document.querySelectorAll('[data-clock]').forEach(el => {
+      const tz  = el.dataset.clock;
+      const sec = el.dataset.sec === '1';
+      el.textContent = now.toLocaleTimeString('ru-RU', {
+        timeZone: tz, hour: '2-digit', minute: '2-digit',
+        ...(sec ? { second: '2-digit' } : {}), hour12: false,
+      });
+    });
+    document.querySelectorAll('[data-tod]').forEach(el => {
+      el.textContent = timeOfDay(el.dataset.tod);
+    });
+  }
+  tick();
+  clockTimer = setInterval(tick, 1000);
+}
+
+// ── ФОТОГРАФИЯ ────────────────────────────────────────────────
 function photoRating(i, daily) {
   const code       = daily.weather_code[i];
   const precipProb = daily.precipitation_probability_max?.[i] ?? 0;
@@ -129,7 +212,6 @@ function photoRating(i, daily) {
     case 'cloudy':  score -=  5; bad.push('☁️ Пасмурно — мягкий свет'); break;
     case 'sunny':                good.push('☀️ Ясное небо');         break;
   }
-
   if      (precipProb > 70) { score -= 20; bad.push(`💧 Дождь ${precipProb}%`); }
   else if (precipProb > 40) { score -= 10; bad.push(`💧 Дождь ${precipProb}%`); }
   else if (precipProb < 15)               { good.push('✅ Осадков маловероятны'); }
@@ -146,18 +228,16 @@ function photoRating(i, daily) {
   else if (sunRatio > 0.3) good.push('⛅ Переменная облачность — драм. свет');
 
   score = Math.max(0, Math.min(100, score));
-
   let emoji, label, color;
-  if      (score >= 80) { emoji = '🌟'; label = 'Отличный день';      color = '#69f0ae'; }
-  else if (score >= 60) { emoji = '✅'; label = 'Хороший день';        color = '#b5e853'; }
-  else if (score >= 40) { emoji = '🟡'; label = 'Неплохо';             color = '#ffee58'; }
-  else if (score >= 20) { emoji = '⚠️'; label = 'Сложные условия';    color = '#ffa726'; }
-  else                  { emoji = '❌'; label = 'Плохо для съёмки';   color = '#ef5350'; }
+  if      (score >= 80) { emoji = '🌟'; label = 'Отличный день';    color = '#69f0ae'; }
+  else if (score >= 60) { emoji = '✅'; label = 'Хороший день';      color = '#b5e853'; }
+  else if (score >= 40) { emoji = '🟡'; label = 'Неплохо';           color = '#ffee58'; }
+  else if (score >= 20) { emoji = '⚠️'; label = 'Сложные условия';  color = '#ffa726'; }
+  else                  { emoji = '❌'; label = 'Плохо для съёмки'; color = '#ef5350'; }
 
   return { score, emoji, label, color, bad, good, windMax, windGust };
 }
 
-// Среднее облачности за ±1 ч вокруг sunStr из почасовых данных
 function goldenHourCloud(hourly, dateStr, sunStr) {
   if (!hourly?.time || !sunStr) return null;
   const sunH = parseInt(sunStr.split('T')[1]?.split(':')[0] ?? '0');
@@ -171,7 +251,6 @@ function goldenHourCloud(hourly, dateStr, sunStr) {
   return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
 }
 
-// Видимость (км) в районе золотого часа
 function goldenHourVis(hourly, dateStr, sunStr) {
   if (!hourly?.time || !sunStr) return null;
   const sunH = parseInt(sunStr.split('T')[1]?.split(':')[0] ?? '0');
@@ -183,7 +262,7 @@ function goldenHourVis(hourly, dateStr, sunStr) {
       vals.push(hourly.visibility[i]);
   });
   if (!vals.length) return null;
-  return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length / 100) / 10; // km
+  return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length / 100) / 10;
 }
 
 function cloudLabel(c) {
@@ -195,11 +274,9 @@ function cloudLabel(c) {
 }
 
 // ── API ───────────────────────────────────────────────────────
-// Если в конфиге указаны lat/lon — геокодинг пропускается
 async function geocode(name, country, lat, lon) {
-  if (lat != null && lon != null) {
+  if (lat != null && lon != null)
     return { latitude: lat, longitude: lon, name, country: country || '' };
-  }
   const res  = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=10&language=ru&format=json`);
   const data = await res.json();
   if (!data.results?.length) throw new Error(`Город не найден: ${name}`);
@@ -212,12 +289,12 @@ async function geocode(name, country, lat, lon) {
 
 async function fetchWeather(lat, lon, isHome = false) {
   const dailyBase = [
-    'weather_code', 'temperature_2m_max', 'temperature_2m_min',
-    'precipitation_sum', 'snowfall_sum', 'uv_index_max',
-    'wind_speed_10m_max', 'precipitation_probability_max',
-    'sunrise', 'sunset',
+    'weather_code','temperature_2m_max','temperature_2m_min',
+    'precipitation_sum','snowfall_sum','uv_index_max',
+    'wind_speed_10m_max','precipitation_probability_max',
+    'sunrise','sunset',
   ];
-  const dailyHome = ['sunshine_duration', 'daylight_duration', 'wind_gusts_10m_max'];
+  const dailyHome = ['sunshine_duration','daylight_duration','wind_gusts_10m_max'];
 
   const params = new URLSearchParams({
     latitude:        lat,
@@ -227,9 +304,8 @@ async function fetchWeather(lat, lon, isHome = false) {
     wind_speed_unit: 'ms',
     timezone:        'auto',
     past_days:       1,
-    forecast_days:   isHome ? 8 : 4,   // home: вчера+сегодня+7; остальные: вчера+сегодня+3
+    forecast_days:   isHome ? 8 : 4,
   });
-
   if (isHome) params.append('hourly', 'cloud_cover,visibility');
 
   const res  = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
@@ -238,19 +314,18 @@ async function fetchWeather(lat, lon, isHome = false) {
   return data;
 }
 
-// ── RENDER — ОБЩИЕ ЧАСТИ ──────────────────────────────────────
+// ── РЕНДЕР — ОБЩИЕ ЧАСТИ ─────────────────────────────────────
 function precipText(c) {
   const parts = [];
-  if (c.snowfall   > 0) parts.push(`❄️ Снег: ${c.snowfall} см/ч`);
-  if (c.rain       > 0) parts.push(`🌧️ Дождь: ${c.rain} мм`);
-  if (c.showers    > 0) parts.push(`🌦️ Ливень: ${c.showers} мм`);
-  if (!parts.length)    return c.precipitation > 0
+  if (c.snowfall > 0) parts.push(`❄️ Снег: ${c.snowfall} см/ч`);
+  if (c.rain    > 0) parts.push(`🌧️ Дождь: ${c.rain} мм`);
+  if (c.showers > 0) parts.push(`🌦️ Ливень: ${c.showers} мм`);
+  if (!parts.length) return c.precipitation > 0
     ? `💧 Осадки: ${c.precipitation} мм`
     : '<span class="no-precip">Осадков нет</span>';
   return parts.join(' · ');
 }
 
-// Одна ячейка прогноза
 function renderForecastDay(daily, i, withSun = false) {
   const w         = wmo(daily.weather_code[i]);
   const maxT      = Math.round(daily.temperature_2m_max[i]);
@@ -282,17 +357,14 @@ function renderForecastDay(daily, i, withSun = false) {
     </div>`;
 }
 
-// ── RENDER — БЛОК СЪЁМКИ ─────────────────────────────────────
+// ── РЕНДЕР — БЛОК СЪЁМКИ ─────────────────────────────────────
 function renderPhotoBlock(daily, hourly) {
-  // Находим ближайшие Сб и Вс в пределах данных
   const todayD = new Date(); todayD.setHours(0,0,0,0);
   const weekendIdx = [];
   for (let i = 0; i < daily.time.length; i++) {
     const dow = getDayOfWeek(daily.time[i]);
-    if (dow === 6 || dow === 0) {
-      const d = parseDateLocal(daily.time[i]);
-      if (d >= todayD) weekendIdx.push(i);
-    }
+    if ((dow === 6 || dow === 0) && parseDateLocal(daily.time[i]) >= todayD)
+      weekendIdx.push(i);
   }
   const toShow = weekendIdx.slice(0, 2);
   if (!toShow.length) return '';
@@ -300,18 +372,16 @@ function renderPhotoBlock(daily, hourly) {
   const dayCards = toShow.map(i => {
     const dateStr  = daily.time[i];
     const dow      = getDayOfWeek(dateStr);
-    const dayName  = dow === 6 ? 'Суббота' : 'Воскресенье';
     const d        = parseDateLocal(dateStr);
+    const dayName  = dow === 6 ? 'Суббота' : 'Воскресенье';
     const dateLbl  = `${d.getDate()} ${RU_MONTHS[d.getMonth()]}`;
     const sunrise  = daily.sunrise?.[i];
     const sunset   = daily.sunset?.[i];
     const rating   = photoRating(i, daily);
-
     const mCloud   = goldenHourCloud(hourly, dateStr, sunrise);
     const eCloud   = goldenHourCloud(hourly, dateStr, sunset);
     const mVis     = goldenHourVis(hourly, dateStr, sunrise);
     const eVis     = goldenHourVis(hourly, dateStr, sunset);
-
     const badHTML  = rating.bad.map( n => `<span class="photo-note photo-note--warn">${n}</span>`).join('');
     const goodHTML = rating.good.map(n => `<span class="photo-note photo-note--good">${n}</span>`).join('');
 
@@ -321,7 +391,6 @@ function renderPhotoBlock(daily, hourly) {
           <span class="photo-day-name">${dayName}, ${dateLbl}</span>
           <span class="photo-rating-badge" style="color:${rating.color}">${rating.emoji} ${rating.label}</span>
         </div>
-
         <div class="photo-golden">
           <div class="golden-block">
             <div class="golden-title">🌅 Рассвет · ${sunTime(sunrise)}</div>
@@ -338,10 +407,7 @@ function renderPhotoBlock(daily, hourly) {
             </div>
           </div>
         </div>
-
-        <div class="photo-wind">
-          💨 ${rating.windMax.toFixed(1)} м/с${rating.windGust > rating.windMax ? ` · порывы ${rating.windGust.toFixed(1)} м/с` : ''}
-        </div>
+        <div class="photo-wind">💨 ${rating.windMax.toFixed(1)} м/с${rating.windGust > rating.windMax ? ` · порывы ${rating.windGust.toFixed(1)} м/с` : ''}</div>
         <div class="photo-notes">${goodHTML}${badHTML}</div>
       </div>`;
   }).join('');
@@ -353,33 +419,24 @@ function renderPhotoBlock(daily, hourly) {
     </div>`;
 }
 
-// ── RENDER — ДОМАШНЯЯ КАРТОЧКА ────────────────────────────────
-function renderHomeCard(label, geo, weather) {
+// ── РЕНДЕР — КОМПАКТНАЯ КАРТОЧКА ДОМАШНЕГО ГОРОДА (левая панель) ──
+function renderHomeCompact(label, geo, weather) {
   const c     = weather.current;
   const w     = wmo(c.weather_code);
   const uv    = uvInfo(c.uv_index);
-  const time  = localTime(weather.timezone);
   const night = c.is_day === 0 ? ' night' : '';
 
-  // Сегодняшние рассвет/закат — ищем по дате
-  const todayI   = Math.max(1, weather.daily.time.findIndex(d => isToday(d)));
-  const srToday  = sunTime(weather.daily.sunrise?.[todayI]);
-  const ssToday  = sunTime(weather.daily.sunset?.[todayI]);
-
-  const forecastHTML = weather.daily.time.map((_, i) =>
-    renderForecastDay(weather.daily, i, true)
-  ).join('');
-
-  const photoHTML = renderPhotoBlock(weather.daily, weather.hourly);
+  const todayI  = Math.max(1, weather.daily.time.findIndex(d => isToday(d)));
+  const srToday = sunTime(weather.daily.sunrise?.[todayI]);
+  const ssToday = sunTime(weather.daily.sunset?.[todayI]);
 
   return `
-    <div class="city-card home-card weather-${w.type}${night}">
-
+    <div class="city-card home-compact weather-${w.type}${night}">
       <div class="card-top">
         <div class="city-info">
           <div class="city-name">${label || geo.name}</div>
           <div class="city-country">${geo.country || ''} · Моё местоположение</div>
-          ${time ? `<div class="local-time">🕐 ${time} местного</div>` : ''}
+          <div class="local-time">🕐 ${localTime(weather.timezone)} местного</div>
         </div>
         <div class="weather-icon-main">${w.icon}</div>
       </div>
@@ -420,30 +477,44 @@ function renderHomeCard(label, geo, weather) {
       </div>
 
       <div class="precip-info">${precipText(c)}</div>
+    </div>`;
+}
 
+// ── РЕНДЕР — РАСШИРЕННЫЙ ПРОГНОЗ (под top-panel) ─────────────
+function renderHomeForecastSection(label, geo, weather) {
+  const w     = wmo(weather.current.weather_code);
+  const night = weather.current.is_day === 0 ? ' night' : '';
+
+  const forecastHTML = weather.daily.time.map((_, i) =>
+    renderForecastDay(weather.daily, i, true)
+  ).join('');
+
+  const photoHTML = renderPhotoBlock(weather.daily, weather.hourly);
+
+  return `
+    <div class="city-card home-forecast-card weather-${w.type}${night}">
       <div class="forecast-strip forecast-strip--extended">
         ${forecastHTML}
       </div>
-
       ${photoHTML}
     </div>`;
 }
 
-// ── RENDER — ОБЫЧНАЯ КАРТОЧКА ─────────────────────────────────
-function renderCard(label, geo, weather) {
+// ── РЕНДЕР — ОБЫЧНАЯ КАРТОЧКА ГОРОДА ─────────────────────────
+function renderCard(label, geo, weather, cc) {
   const c     = weather.current;
   const w     = wmo(c.weather_code);
   const uv    = uvInfo(c.uv_index);
-  const time  = localTime(weather.timezone);
   const night = c.is_day === 0 ? ' night' : '';
+  const countryName = (cc && COUNTRY_NAMES[cc]) || geo.country || cc || '';
 
   return `
     <div class="city-card weather-${w.type}${night}">
+      ${cc || countryName ? `<div class="card-country-chip">${getFlag(cc)}${countryName}</div>` : ''}
       <div class="card-top">
         <div class="city-info">
           <div class="city-name">${label || geo.name}</div>
-          <div class="city-country">${geo.country || ''}</div>
-          ${time ? `<div class="local-time">${time} местного</div>` : ''}
+          <div class="local-time">${localTime(weather.timezone)} местного</div>
         </div>
         <div class="weather-icon-main">${w.icon}</div>
       </div>
@@ -479,24 +550,35 @@ function renderCard(label, geo, weather) {
 }
 
 // ── ЗАГРУЗКА ОДНОГО ГОРОДА ────────────────────────────────────
-async function loadCitySlot({ placeholder, city, isHome }) {
+async function loadCitySlot({ placeholder, city, isHome, cityIdx }) {
   try {
     const geo     = await geocode(city.name, city.country, city.lat, city.lon);
     const weather = await fetchWeather(geo.latitude, geo.longitude, isHome);
-    const html    = isHome
-      ? renderHomeCard(city.label || null, geo, weather)
-      : renderCard(city.label || null, geo, weather);
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html.trim();
-    placeholder.replaceWith(tmp.firstElementChild);
+
+    if (isHome) {
+      document.getElementById('home-weather').innerHTML =
+        renderHomeCompact(city.label || null, geo, weather);
+      document.getElementById('home-forecast').innerHTML =
+        renderHomeForecastSection(city.label || null, geo, weather);
+    } else {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = renderCard(city.label || null, geo, weather, city.country).trim();
+      placeholder.replaceWith(tmp.firstElementChild);
+    }
   } catch (err) {
-    placeholder.className = `city-card error-card${isHome ? ' home-card' : ''}`;
-    placeholder.innerHTML = `
+    const errHTML = `
       <div class="error-content">
         <div class="error-icon">⚠️</div>
         <div class="city-name">${city.label || city.name}</div>
         <div class="error-msg">${err.message}</div>
       </div>`;
+    if (isHome) {
+      document.getElementById('home-weather').innerHTML =
+        `<div class="city-card error-card home-compact">${errHTML}</div>`;
+    } else if (placeholder) {
+      placeholder.className = 'city-card error-card';
+      placeholder.innerHTML = errHTML;
+    }
   }
 }
 
@@ -513,17 +595,27 @@ function groupByCountry(cities) {
 
 // ── MAIN ──────────────────────────────────────────────────────
 async function init() {
+  const homeEl     = document.getElementById('home-weather');
+  const forecastEl = document.getElementById('home-forecast');
+  const cwBody     = document.getElementById('cw-body');
   const grid       = document.getElementById('cities-grid');
   const lastUpd    = document.getElementById('last-updated');
   const refreshBtn = document.getElementById('refresh-btn');
 
+  // Сброс
+  clockDataArr = {};
+  if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
+  cwBody.innerHTML = '<div class="cw-loading">Загрузка…</div>';
+  forecastEl.innerHTML = '';
   grid.innerHTML = '';
-  refreshBtn.classList.remove('spinning');
-  void refreshBtn.offsetWidth;
-  refreshBtn.classList.add('spinning');
+  if (refreshBtn) {
+    refreshBtn.classList.remove('spinning');
+    void refreshBtn.offsetWidth;
+    refreshBtn.classList.add('spinning');
+  }
 
   try {
-    const res = await fetch('config.json');
+    const res = await fetch('config.json', { cache: 'no-cache' });
     if (!res.ok) throw new Error('Не найден config.json');
     const config = await res.json();
 
@@ -532,40 +624,71 @@ async function init() {
       return;
     }
 
+    // Часовые пояса — отдельный список из config.clock
+    if (config.clock?.length) {
+      config.clock.forEach((c, i) => {
+        clockDataArr[i] = {
+          label:       c.label,
+          countryName: COUNTRY_NAMES[c.country] || c.country || '',
+          timezone:    c.timezone,
+          isHome:      !!c.home,
+          order:       i,
+        };
+      });
+      updateClockPanel();
+      startClock();
+    }
+
     const homeCity = config.cities.find(c => c.home) || config.cities[0];
     const groups   = groupByCountry(config.cities);
     const slots    = [];
 
-    for (const { cc, cities } of groups) {
-      const hdr = document.createElement('div');
-      hdr.className = 'country-header';
-      hdr.innerHTML = `${getFlag(cc)} ${COUNTRY_NAMES[cc] || cc}`;
-      grid.appendChild(hdr);
+    // Загрузочный плейсхолдер для домашнего города
+    homeEl.innerHTML = `
+      <div class="city-card loading-card home-compact">
+        <div class="loading-pulse">
+          <div class="city-name" style="color:rgba(255,255,255,0.7)">${homeCity.label || homeCity.name}</div>
+          <div class="loading-text">Загрузка…</div>
+        </div>
+      </div>`;
 
-      for (const city of cities) {
-        const isHome = city === homeCity;
-        const ph = document.createElement('div');
-        ph.className = `city-card loading-card${isHome ? ' home-card' : ''}`;
+    // Строим сетку для остальных городов (сгруппированы по стране, без отдельных заголовков)
+    for (const { cc, cities } of groups) {
+      const nonHome = cities.filter(c => c !== homeCity);
+      if (!nonHome.length) continue;
+
+      for (const city of nonHome) {
+        const idx = config.cities.indexOf(city);
+        const ph  = document.createElement('div');
+        ph.className = 'city-card loading-card';
         ph.innerHTML = `
           <div class="loading-pulse">
             <div class="city-name" style="color:rgba(255,255,255,0.7)">${city.label || city.name}</div>
             <div class="loading-text">Загрузка…</div>
           </div>`;
         grid.appendChild(ph);
-        slots.push({ placeholder: ph, city, isHome });
+        slots.push({ placeholder: ph, city, isHome: false, cityIdx: idx });
       }
     }
 
+    // Добавляем домашний город (рендерится не в grid)
+    slots.push({
+      placeholder: null,
+      city:        homeCity,
+      isHome:      true,
+      cityIdx:     config.cities.indexOf(homeCity),
+    });
+
+    // Загружаем все параллельно
     await Promise.all(slots.map(s => loadCitySlot(s)));
 
-    const now = new Date();
-    lastUpd.textContent = `Обновлено в ${now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
+    if (lastUpd) lastUpd.textContent = `Обновлено в ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
 
   } catch (err) {
     grid.innerHTML = `<div class="error-global">Ошибка: ${err.message}</div>`;
   }
 }
 
-document.getElementById('refresh-btn').addEventListener('click', init);
+document.getElementById('refresh-btn')?.addEventListener('click', init);
 setInterval(init, 30 * 60 * 1000);
 init();

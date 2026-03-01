@@ -29,5 +29,13 @@
     { "name": "Seoul",            "country": "KR", "label": "Сеул"                          },
 
     { "name": "Bishkek",          "country": "KG", "label": "Бишкек"                        }
+  ],
+
+  "clock": [
+    { "label": "Да Лат",          "country": "VN", "timezone": "Asia/Ho_Chi_Minh", "home": true },
+    { "label": "Санкт-Петербург", "country": "RU", "timezone": "Europe/Moscow"                  },
+    { "label": "Алматы",          "country": "KZ", "timezone": "Asia/Almaty"                    },
+    { "label": "Дубай",           "country": "AE", "timezone": "Asia/Dubai"                     },
+    { "label": "Ереван",          "country": "AM", "timezone": "Asia/Yerevan"                   }
   ]
 }
