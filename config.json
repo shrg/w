@@ -1,0 +1,33 @@
+{
+  "cities": [
+    { "name": "Da Lat", "country": "VN", "label": "Да Лат", "home": true, "lat": 11.9465, "lon": 108.4419 },
+
+    { "name": "Saint Petersburg", "country": "RU", "label": "Санкт-Петербург"               },
+    { "name": "Kropotkin",        "country": "RU", "label": "Кропоткин"                     },
+    { "name": "Kalevala",         "country": "RU", "label": "Kalevala"                      },
+    { "name": "Moscow",           "country": "RU", "label": "Москва"                        },
+    { "name": "Adler",            "country": "RU", "label": "Адлер"                         },
+
+    { "name": "Tbilisi",          "country": "GE", "label": "Тбилиси"                       },
+    { "name": "Batumi",           "country": "GE", "label": "Батуми"                        },
+
+    { "name": "Tallinn",          "country": "EE", "label": "Таллин"                        },
+
+    { "name": "Marrakech",        "country": "MA", "label": "Марракеш"                      },
+
+    { "name": "Belgrade",         "country": "RS", "label": "Белград"                       },
+
+    { "name": "Istanbul",         "country": "TR", "label": "Стамбул"                       },
+
+    { "name": "Dubai",            "country": "AE", "label": "Дубай"                         },
+
+    { "name": "Bangkok",          "country": "TH", "label": "Бангкок"                       },
+    { "name": "Chiang Mai",       "country": "TH", "label": "Чиангмай"                      },
+
+    { "name": "Almaty",           "country": "KZ", "label": "Алматы"                        },
+
+    { "name": "Seoul",            "country": "KR", "label": "Сеул"                          },
+
+    { "name": "Bishkek",          "country": "KG", "label": "Бишкек"                        }
+  ]
+}
