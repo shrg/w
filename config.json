@@ -1,6 +1,6 @@
 {
   "cities": [
-    { "name": "Da Lat", "country": "VN", "label": "Да Лат", "home": true, "lat": 11.9465, "lon": 108.4419 },
+    { "name": "Almaty",           "country": "KZ", "label": "Алматы", "home": true          },
 
     { "name": "Saint Petersburg", "country": "RU", "label": "Санкт-Петербург"               },
     { "name": "Kalevala",         "country": "RU", "label": "Kalevala"                      },
@@ -20,6 +20,7 @@
     { "name": "Tallinn",          "country": "EE", "label": "Таллин"                        },
 
     { "name": "Da Nang",          "country": "VN", "label": "Дананг", "lat": 16.0544, "lon": 108.2022 },
+    { "name": "Da Lat",           "country": "VN", "label": "Да Лат", "lat": 11.9465, "lon": 108.4419 },
     { "name": "Bangkok",          "country": "TH", "label": "Бангкок"                       },
     { "name": "Chiang Mai",       "country": "TH", "label": "Чиангмай"                      },
     { "name": "Kuala Lumpur",     "country": "MY", "label": "Куала-Лумпур"                  },
