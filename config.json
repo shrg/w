@@ -36,9 +36,9 @@
   ],
 
   "clock": [
-    { "label": "Да Лат",          "country": "VN", "timezone": "Asia/Ho_Chi_Minh", "home": true },
+    { "label": "Да Лат",          "country": "VN", "timezone": "Asia/Ho_Chi_Minh"               },
     { "label": "Санкт-Петербург", "country": "RU", "timezone": "Europe/Moscow"                  },
-    { "label": "Алматы",          "country": "KZ", "timezone": "Asia/Almaty"                    },
+    { "label": "Алматы",          "country": "KZ", "timezone": "Asia/Almaty", "home": true      },
     { "label": "Дубай",           "country": "AE", "timezone": "Asia/Dubai"                     },
     { "label": "Ереван",          "country": "AM", "timezone": "Asia/Yerevan"                   }
   ]
