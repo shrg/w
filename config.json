@@ -1,6 +1,6 @@
 {
   "cities": [
-    { "name": "Almaty",           "country": "KZ", "label": "Алматы", "home": true          },
+    { "name": "Colombo",           "country": "LK", "label": "Коломбо", "home": true          },
 
     { "name": "Saint Petersburg", "country": "RU", "label": "Санкт-Петербург"               },
     { "name": "Kalevala",         "country": "RU", "label": "Kalevala"                      },
