@@ -27,7 +27,7 @@
     { "name": "Jakarta",          "country": "ID", "label": "Джакарта"                      },
 
     { "name": "Belgrade",         "country": "RS", "label": "Белград"                       },
-    { "name": "Marrakech",        "country": "MA", "label": "Марракеш"                      },
+    { "name": "Marrakech",        "country": "MA", "label": "Марракеш", "lat": 31.625000, "lon": -7.992222},
     { "name": "Chefchaouen",      "country": "MA", "label": "Шефшуэн"                       },
     { "name": "Istanbul",         "country": "TR", "label": "Стамбул"                       },
     { "name": "Alanya",           "country": "TR", "label": "Алания"                        },
